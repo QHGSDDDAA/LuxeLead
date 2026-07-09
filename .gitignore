@@ -1,0 +1,66 @@
+*.pyc
+__pycache__/
+*.egg-info/
+dist/
+build/
+*.spec
+!luxelead_macos.spec
+._luxelead_cache/
+_update_test_onedir/
+_e2e_onefile_update/
+_test_progress_argv/
+.DS_Store
+*.log
+*.pptx
+*.zip
+.idea/
+.vscode/
+*.db
+*.sqlite
+*.json
+!releases/version.json
+!releases/bin/*.exe
+tests/data/
+# macOS build artifacts
+*.dmg
+*.app
+luxelead.icns
+
+# 临时文件
+gitlab_*.html
+gitlab_cookies.txt
+.reasonix/
+
+# 虚拟环境
+venv*/
+venv_final/
+venv_yolov8/
+
+# 临时构建目录
+_pptx_tmp/
+releases/bin/
+releases/__pycache__/
+
+# 本地 wheel / 模型文件 (yolov8n.pt 单独管理)
+*.whl
+!yolov8n.pt
+
+# Windows 编译产物
+*.pyd
+*.dll
+
+# 打包临时文件
+*.spec
+!luxelead_macos.spec
+
+# 测试临时文件
+_update_test/
+_update_test2/
+_pptx_tmp/
+test_*.jpg
+installer/*.iss
+
+# 构建产物
+*.exe
+releases/bin/
+*.bat

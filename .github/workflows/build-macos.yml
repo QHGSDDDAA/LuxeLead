@@ -1,0 +1,270 @@
+# =============================================================================
+# build-macos.yml — GitHub Actions: build & release LuxeLead macOS .app
+#
+# 无需 Apple 开发者证书也可使用！应用构建后可直接运行（首次打开时
+# Gatekeeper 会提示"无法验证开发者"，右键 → 打开即可）。
+#
+# 如果你以后买了 Apple Developer 账号 ($99/年)，可设置如下 Secrets
+# 自动开启代码签名 + 公证（用户安装时无警告）：
+#   APPLE_DEVELOPER_IDENTITY    "Developer ID Application: Your Name (TEAMID)"
+#   APPLE_CERTIFICATE_P12       Base64 编码的 .p12 证书
+#   APPLE_CERTIFICATE_PASSWORD  证书密码
+#   APPLE_ID                    Apple ID 邮箱
+#   APPLE_TEAM_ID               10 位 Team ID
+#   APPLE_APP_SPECIFIC_PASSWORD App 专用密码
+# =============================================================================
+name: Build macOS
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号覆盖（留空自动读取代码中的版本）"
+        required: false
+        type: string
+
+concurrency:
+  group: macos-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build LuxeLead macOS .app
+    runs-on: macos-latest
+    timeout-minutes: 120
+
+    steps:
+      # --------------------------------------------------------------------
+      # 1. Checkout
+      # --------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: false
+
+      # --------------------------------------------------------------------
+      # 2. Setup Python 3.12
+      # --------------------------------------------------------------------
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            pyproject.toml
+            requirements-macos.txt
+
+      # --------------------------------------------------------------------
+      # 3. System dependencies (libheif for HEIC image support)
+      # --------------------------------------------------------------------
+      - name: Install Homebrew dependencies
+        run: |
+          brew update
+          brew install libheif libde265
+          brew list --versions libheif libde265
+
+      # --------------------------------------------------------------------
+      # 4. Python dependencies
+      # --------------------------------------------------------------------
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements-macos.txt
+
+      - name: Verify key imports
+        run: |
+          python3 -c "import ultralytics; print('ultralytics', ultralytics.__version__)"
+          python3 -c "import torch; print('torch', torch.__version__)"
+          python3 -c "import pi_heif; print('pi-heif OK')"
+          python3 -c "import tkinter; print('tkinter OK')"
+
+      # --------------------------------------------------------------------
+      # 5. YOLOv8 model
+      # --------------------------------------------------------------------
+      - name: Ensure YOLOv8 model exists
+        run: |
+          if [ ! -f "yolov8n.pt" ]; then
+            python3 -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
+          fi
+          ls -lh yolov8n.pt
+
+      # --------------------------------------------------------------------
+      # 6. [可选] 导入 Apple 开发者证书 — 仅在设置了 Secrets 时执行
+      # --------------------------------------------------------------------
+      - name: Import Apple Developer certificate (optional)
+        if: ${{ secrets.APPLE_CERTIFICATE_P12 != '' && secrets.APPLE_CERTIFICATE_PASSWORD != '' }}
+        env:
+          P12_B64: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          P12_PASS: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
+          echo "$P12_B64" | base64 --decode > /tmp/developer_id.p12
+          security import /tmp/developer_id.p12 \
+            -k "$KEYCHAIN" \
+            -P "$P12_PASS" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+          rm -f /tmp/developer_id.p12
+          security find-identity -v -p codesigning 2>&1 | head -10
+
+      # --------------------------------------------------------------------
+      # 7. PyInstaller → LuxeLead.app
+      # --------------------------------------------------------------------
+      - name: Build LuxeLead.app with PyInstaller
+        id: build
+        env:
+          LUXELEAD_VERSION: ${{ inputs.version || '' }}
+        run: |
+          if [ -n "$LUXELEAD_VERSION" ]; then
+            echo "Overriding version: $LUXELEAD_VERSION"
+          fi
+          rm -rf build dist
+          pyinstaller luxelead_macos.spec --noconfirm --log-level=INFO
+
+          APP_BUNDLE="dist/LuxeLead.app"
+          if [ ! -d "$APP_BUNDLE" ]; then
+            echo "ERROR: App bundle not found!"
+            ls -la dist/
+            exit 1
+          fi
+          echo "BUNDLE_SIZE=$(du -sh "$APP_BUNDLE" | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      # --------------------------------------------------------------------
+      # 8. [可选] 代码签名 — 仅在设置了证书时执行
+      # --------------------------------------------------------------------
+      - name: Code sign .app (optional)
+        if: ${{ secrets.APPLE_DEVELOPER_IDENTITY != '' }}
+        env:
+          APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
+        run: |
+          APP_BUNDLE="dist/LuxeLead.app"
+          find "$APP_BUNDLE" -type f \( -perm +111 -o -name "*.dylib" -o -name "*.so" \) | \
+          while read -r binary; do
+            codesign --force --options runtime --sign "$APPLE_DEVELOPER_IDENTITY" \
+              --entitlements scripts/entitlements.plist "$binary" 2>/dev/null || true
+          done
+          codesign --force --options runtime --deep \
+            --sign "$APPLE_DEVELOPER_IDENTITY" \
+            --entitlements scripts/entitlements.plist \
+            "$APP_BUNDLE"
+          codesign -dvvv "$APP_BUNDLE" 2>&1 | head -10
+          echo "SIGNED=1" >> "$GITHUB_ENV"
+
+      # --------------------------------------------------------------------
+      # 9. 打包为 DMG
+      # --------------------------------------------------------------------
+      - name: Package as DMG
+        id: dmg
+        run: |
+          VERSION="${LUXELEAD_VERSION:-$(python3 -c "
+exec(open('src/luxelead/version.py').read())
+print(VERSION)
+")}"
+          echo "Packaging version: $VERSION"
+          APP_BUNDLE="dist/LuxeLead.app"
+
+          brew install create-dmg 2>/dev/null || true
+          if command -v create-dmg &>/dev/null; then
+            create-dmg \
+              --volname "LuxeLead $VERSION" \
+              --window-pos 200 120 \
+              --window-size 600 400 \
+              --icon-size 100 \
+              --icon "LuxeLead.app" 175 190 \
+              --hide-extension "LuxeLead.app" \
+              --app-drop-link 425 190 \
+              "dist/LuxeLead-$VERSION.dmg" \
+              "$APP_BUNDLE"
+          else
+            DMG_DIR="dist/dmg_staging"
+            mkdir -p "$DMG_DIR"
+            cp -R "$APP_BUNDLE" "$DMG_DIR/"
+            ln -s /Applications "$DMG_DIR/Applications"
+            hdiutil create \
+              -volname "LuxeLead $VERSION" \
+              -srcfolder "$DMG_DIR" \
+              -ov -format UDZO \
+              "dist/LuxeLead-$VERSION.dmg"
+            rm -rf "$DMG_DIR"
+          fi
+
+          DMG_PATH="dist/LuxeLead-$VERSION.dmg"
+          echo "DMG_PATH=$DMG_PATH" >> "$GITHUB_OUTPUT"
+          echo "DMG_NAME=$(basename "$DMG_PATH")" >> "$GITHUB_OUTPUT"
+          ls -lh "$DMG_PATH"
+
+      # --------------------------------------------------------------------
+      # 10. [可选] Apple 公证 — 仅在签名成功 + 设置了公证 Secrets 时执行
+      # --------------------------------------------------------------------
+      - name: Notarize with Apple (optional)
+        if: ${{ env.SIGNED == '1' && secrets.APPLE_ID != '' && secrets.APPLE_APP_SPECIFIC_PASSWORD != '' && secrets.APPLE_TEAM_ID != '' }}
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          DMG_PATH="${{ steps.dmg.outputs.DMG_PATH }}"
+          xcrun notarytool submit "$DMG_PATH" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --wait 15m --progress
+          xcrun stapler staple "$DMG_PATH"
+          xcrun stapler staple "dist/LuxeLead.app"
+          echo "NOTARIZED=1" >> "$GITHUB_ENV"
+
+      # --------------------------------------------------------------------
+      # 11. 上传产物到 GitHub Actions Artifacts（供手动下载测试）
+      # --------------------------------------------------------------------
+      - name: Upload .app as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LuxeLead-app
+          path: dist/LuxeLead.app
+          compression-level: 0
+          retention-days: 7
+
+      - name: Upload DMG as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LuxeLead-DMG
+          path: ${{ steps.dmg.outputs.DMG_PATH }}
+          if-no-files-found: warn
+          retention-days: 30
+
+      # --------------------------------------------------------------------
+      # 12. 创建 GitHub Release（仅标签推送时触发）
+      # --------------------------------------------------------------------
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: LuxeLead ${{ github.ref_name }}
+          body: |
+            ## LuxeLead macOS 构建
+
+            **版本**: ${{ github.ref_name }}
+            **构建日期**: ${{ github.event.repository.updated_at }}
+
+            ### 安装说明
+            1. 下载 `LuxeLead-*.dmg`
+            2. 双击打开 DMG
+            3. 将 `LuxeLead.app` 拖入 Applications 文件夹
+            4. ⚠️ **首次打开**：由于没有 Apple 开发者签名，Gatekeeper 会阻止直接双击打开。
+               请 **右键点击 → 打开**，然后选择"打开"即可。之后不会再提示。
+
+            ### 系统要求
+            - macOS 11 (Big Sur) 或更高
+            - Apple Silicon (M1/M2/M3/M4) 或 Intel Mac
+
+            ### 注意事项
+            - 这是**无签名构建**，应用本身功能完全正常
+            - 如果你有 Apple Developer 账号，可以配置 Secrets 开启自动签名+公证
+          draft: true
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'rc') }}
+          files: |
+            ${{ steps.dmg.outputs.DMG_PATH }}

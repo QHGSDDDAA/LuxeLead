@@ -1,0 +1,25 @@
+# macOS Python dependencies for LuxeLead
+# Install via: pip install -r requirements-macos.txt
+
+# Core app
+python-pptx>=0.6.23
+Pillow>=10.0.0
+lxml>=4.9.0
+
+# HEIC/HEIF image support (needs libheif via brew)
+pi-heif>=1.0.0
+
+# YOLOv8 person detection
+ultralytics>=8.0.0
+
+# Deep learning backend (macOS CPU/MPS)
+torch>=2.2.0
+torchvision>=0.17.0
+
+# Build tool
+pyinstaller>=6.0
+
+# Image processing extras
+opencv-python-headless>=4.8.0
+numpy>=1.24.0
+matplotlib>=3.7.0

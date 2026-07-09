@@ -1,0 +1,33 @@
+{
+  "version": "0.8.0",
+  "display_version": "测试版V0.8.0",
+  "release_date": "2026-06-30",
+  "release_notes": "# 测试版 V0.8.0 版本说明\n\n**版本号：** 0.8.0  \n**发布日期：** 2026-06-30\n\n## 更新内容\n\n### 安装版（首次安装）\n\n- 新增 **Inno Setup 安装程序** `LuxeLead_Setup_V0.8.0.exe`\n- 双击安装，自动创建开始菜单/桌面快捷方式，无需手动解压 zip\n\n### 在线更新加速\n\n- 支持 **增量更新包**：小版本只下载/覆盖变更文件，显著缩短下载与安装时间\n- 完整 zip 仍保留，供首次安装或跨版本升级使用\n\n### 历史修复（V0.7.9）\n\n- PowerShell 独立进度窗，避免更新时文件占用\n- robocopy 安装，`LuxeLead/` 顶层目录结构\n\n## 使用说明\n\n| 场景 | 方式 |\n|------|------|\n| 首次安装 | 下载 `LuxeLead_Setup_V0.8.0.exe` 或解压完整 zip |\n| 在线更新 | 帮助 → 检查更新（V0.7.9 起优先下载增量包） |\n| 手动目录 | 进入 `LuxeLead` 文件夹，双击 exe |",
+  "package_type": "onedir_zip",
+  "filename": "LuxeLead_V0.8.0_win64.zip",
+  "download_url": "http://10.8.251.3:8081/api/v4/projects/220/packages/generic/luxelead/0.8.0/LuxeLead_V0.8.0_win64.zip",
+  "zip_root": "LuxeLead",
+  "app_folder": "LuxeLead",
+  "launch_exe": "伊芙丽奢领竞PPT排版工具V0.7.exe",
+  "file_size": 305345035,
+  "sha256": "77fed28ebb8fb5a2f2589b42f8c3e6d6bedb02b2ed9132872cf4401eec097781",
+  "file_count": 5876,
+  "download_token": "TAbeoRd3JNc76j9UGipw",
+  "patches": [
+    {
+      "base_version": "0.7.9",
+      "package_type": "onedir_patch",
+      "filename": "LuxeLead_patch_0.7.9_to_0.8.0.zip",
+      "download_url": "http://10.8.251.3:8081/api/v4/projects/220/packages/generic/luxelead/0.8.0/LuxeLead_patch_0.7.9_to_0.8.0.zip",
+      "file_size": 32433193,
+      "sha256": "f8f967f263053622f36153556e6ae2cfc7d9a185e1d56a2aaa065506377696df",
+      "changed_files": 3
+    }
+  ],
+  "installer": {
+    "filename": "LuxeLead_Setup_V0.8.0.exe",
+    "download_url": "http://10.8.251.3:8081/api/v4/projects/220/packages/generic/luxelead/0.8.0/LuxeLead_Setup_V0.8.0.exe",
+    "file_size": 216713264,
+    "sha256": "8b96fd5eac3ee71a8787d54203272a4f7f5225c7154982887482a129e9438ec6"
+  }
+}
