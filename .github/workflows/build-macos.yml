@@ -160,10 +160,8 @@ jobs:
       - name: Package as DMG
         id: dmg
         run: |
-          VERSION="${LUXELEAD_VERSION:-$(python3 -c "
-exec(open('src/luxelead/version.py').read())
-print(VERSION)
-")}"
+          # 获取版本号
+          VERSION="${LUXELEAD_VERSION:-$(python3 -c "exec(open('src/luxelead/version.py').read());print(VERSION)")}"
           echo "Packaging version: $VERSION"
           APP_BUNDLE="dist/LuxeLead.app"
 
@@ -218,7 +216,7 @@ print(VERSION)
           echo "NOTARIZED=1" >> "$GITHUB_ENV"
 
       # --------------------------------------------------------------------
-      # 11. 上传产物到 GitHub Actions Artifacts（供手动下载测试）
+      # 11. 上传产物到 GitHub Actions Artifacts
       # --------------------------------------------------------------------
       - name: Upload .app as artifact
         uses: actions/upload-artifact@v4
