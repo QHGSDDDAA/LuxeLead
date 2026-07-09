@@ -93,14 +93,17 @@ jobs:
           ls -lh yolov8n.pt
 
       # --------------------------------------------------------------------
-      # 6. [可选] 导入 Apple 开发者证书 — 仅在设置了 Secrets 时执行
+      # 6. [可选] 导入 Apple 开发者证书
       # --------------------------------------------------------------------
       - name: Import Apple Developer certificate (optional)
-        if: ${{ secrets.APPLE_CERTIFICATE_P12 != '' && secrets.APPLE_CERTIFICATE_PASSWORD != '' }}
         env:
           P12_B64: ${{ secrets.APPLE_CERTIFICATE_P12 }}
           P12_PASS: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
         run: |
+          if [ -z "$P12_B64" ] || [ -z "$P12_PASS" ]; then
+            echo "No certificate secrets set, skipping"
+            exit 0
+          fi
           KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
           echo "$P12_B64" | base64 --decode > /tmp/developer_id.p12
           security import /tmp/developer_id.p12 \
@@ -134,13 +137,16 @@ jobs:
           echo "BUNDLE_SIZE=$(du -sh "$APP_BUNDLE" | cut -f1)" >> "$GITHUB_OUTPUT"
 
       # --------------------------------------------------------------------
-      # 8. [可选] 代码签名 — 仅在设置了证书时执行
+      # 8. [可选] 代码签名
       # --------------------------------------------------------------------
       - name: Code sign .app (optional)
-        if: ${{ secrets.APPLE_DEVELOPER_IDENTITY != '' }}
         env:
           APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
         run: |
+          if [ -z "$APPLE_DEVELOPER_IDENTITY" ]; then
+            echo "No code signing identity set, skipping"
+            exit 0
+          fi
           APP_BUNDLE="dist/LuxeLead.app"
           find "$APP_BUNDLE" -type f \( -perm +111 -o -name "*.dylib" -o -name "*.so" \) | \
           while read -r binary; do
@@ -160,7 +166,6 @@ jobs:
       - name: Package as DMG
         id: dmg
         run: |
-          # 获取版本号
           VERSION="${LUXELEAD_VERSION:-$(python3 -c "exec(open('src/luxelead/version.py').read());print(VERSION)")}"
           echo "Packaging version: $VERSION"
           APP_BUNDLE="dist/LuxeLead.app"
@@ -196,15 +201,19 @@ jobs:
           ls -lh "$DMG_PATH"
 
       # --------------------------------------------------------------------
-      # 10. [可选] Apple 公证 — 仅在签名成功 + 设置了公证 Secrets 时执行
+      # 10. [可选] Apple 公证
       # --------------------------------------------------------------------
       - name: Notarize with Apple (optional)
-        if: ${{ env.SIGNED == '1' && secrets.APPLE_ID != '' && secrets.APPLE_APP_SPECIFIC_PASSWORD != '' && secrets.APPLE_TEAM_ID != '' }}
+        if: env.SIGNED == '1'
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: |
+          if [ -z "$APPLE_ID" ] || [ -z "$APPLE_TEAM_ID" ] || [ -z "$APPLE_APP_SPECIFIC_PASSWORD" ]; then
+            echo "Notarization secrets not set, skipping"
+            exit 0
+          fi
           DMG_PATH="${{ steps.dmg.outputs.DMG_PATH }}"
           xcrun notarytool submit "$DMG_PATH" \
             --apple-id "$APPLE_ID" \
@@ -258,10 +267,6 @@ jobs:
             ### 系统要求
             - macOS 11 (Big Sur) 或更高
             - Apple Silicon (M1/M2/M3/M4) 或 Intel Mac
-
-            ### 注意事项
-            - 这是**无签名构建**，应用本身功能完全正常
-            - 如果你有 Apple Developer 账号，可以配置 Secrets 开启自动签名+公证
           draft: true
           prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'rc') }}
           files: |
