@@ -12,6 +12,7 @@ _test_progress_argv/
 .DS_Store
 *.log
 *.pptx
+!src/luxelead/templates/default.pptx
 *.zip
 .idea/
 .vscode/
