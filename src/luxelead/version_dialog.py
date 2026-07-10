@@ -239,8 +239,22 @@ class CheckUpdateDialog:
         if not self.manifest:
             return
 
-        if not getattr(os, "name", "") == "nt":
-            messagebox.showwarning("提示", "自动更新目前仅支持 Windows 版客户端。", parent=self.window)
+        if os.name != "nt":
+            # macOS: open browser to GitHub Releases
+            import webbrowser
+            url = self.manifest.get("download_url") or self.manifest.get("github_html_url", "")
+            if url:
+                webbrowser.open(url)
+                messagebox.showinfo(
+                    "打开下载页面",
+                    f"请在浏览器中下载新版本。
+
+如果浏览器未自动打开，请访问：
+{url}",
+                    parent=self.window,
+                )
+            else:
+                messagebox.showwarning("无法更新", "未找到下载地址。", parent=self.window)
             return
 
         self.update_package = resolve_update_package(self.manifest, VERSION)
