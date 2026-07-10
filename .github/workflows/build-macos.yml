@@ -63,6 +63,7 @@ jobs:
       # --------------------------------------------------------------------
       - name: Install Homebrew dependencies
         run: |
+          export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
           brew update
           brew install libheif libde265
           brew list --versions libheif libde265
