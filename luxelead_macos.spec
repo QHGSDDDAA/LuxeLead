@@ -22,7 +22,7 @@ import site
 def _read_version():
     """Read VERSION from version.py without importing the package."""
     version_py = os.path.join(
-        os.path.dirname(__file__), "src", "luxelead", "version.py"
+        os.getcwd(), "src", "luxelead", "version.py"
     )
     with open(version_py, encoding="utf-8") as f:
         for line in f:
