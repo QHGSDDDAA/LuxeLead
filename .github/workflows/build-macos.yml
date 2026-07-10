@@ -15,6 +15,10 @@
 # =============================================================================
 name: Build macOS
 
+
+permissions:
+  contents: write
+
 on:
   push:
     tags:
