@@ -80,6 +80,9 @@ hiddenimports = [
     "tkinter.filedialog",
     "tkinter.messagebox",
     "pi_heif",
+    "luxelead.version_dialog",
+    "luxelead.version",
+    "luxelead.update_progress",
 ]
 
 # ---------------------------------------------------------------------------
