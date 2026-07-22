@@ -50,15 +50,24 @@ BUNDLE_DISPLAY_NAME = "伊芙丽奢领竞PPT排版工具"
 
 # ---------------------------------------------------------------------------
 # Data files
-from PyInstaller.building.dataclass import Tree
 
-# ---------------------------------------------------------------------------
+
 datas = [
     ("yolov8n.pt", "."),
     ("src/luxelead/templates/default.pptx", "templates"),
     ("releases/RELEASE_NOTES.md", "releases"),
-    Tree("src/luxelead", prefix="luxelead", excludes=["__pycache__"]),
 ]
+
+# 强制包含所有 luxelead .py 文件（有时 PyInstaller 会遗漏）
+import os
+for root, dirs, files in os.walk("src/luxelead"):
+    dirs[:] = [d for d in dirs if d != "__pycache__"]
+    for f in files:
+        if f.endswith(".py"):
+            src = os.path.join(root, f)
+            dst = os.path.relpath(root, "src")
+            datas.append((src, dst))
+
 
 # ---------------------------------------------------------------------------
 # Hidden imports  (same as Windows, minus platform-specific ones)
@@ -89,6 +98,17 @@ hiddenimports = [
     "luxelead.update_progress",
 ]
 
+# 强制包含所有 luxelead .py 文件（有时 PyInstaller 会遗漏）
+import os
+for root, dirs, files in os.walk("src/luxelead"):
+    dirs[:] = [d for d in dirs if d != "__pycache__"]
+    for f in files:
+        if f.endswith(".py"):
+            src = os.path.join(root, f)
+            dst = os.path.relpath(root, "src")
+            datas.append((src, dst))
+
+
 # ---------------------------------------------------------------------------
 # Collect pptx data/bins recursively
 # ---------------------------------------------------------------------------
@@ -113,6 +133,17 @@ excludes = [
     "pytest",
     "pandas",
 ]
+
+# 强制包含所有 luxelead .py 文件（有时 PyInstaller 会遗漏）
+import os
+for root, dirs, files in os.walk("src/luxelead"):
+    dirs[:] = [d for d in dirs if d != "__pycache__"]
+    for f in files:
+        if f.endswith(".py"):
+            src = os.path.join(root, f)
+            dst = os.path.relpath(root, "src")
+            datas.append((src, dst))
+
 
 # ---------------------------------------------------------------------------
 # Analysis
