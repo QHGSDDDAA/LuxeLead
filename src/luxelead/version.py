@@ -6,9 +6,9 @@ RELEASE_DATE = "2026-07-22"
 
 # GitLab Generic Package URL for update manifest (private repo; requires deploy token).
 # GitHub Releases URL for update checking (public).
-GITHUB_RELEASES_URL = "https://github.com/quhe0517/LuxeLead/releases/latest"
+GITHUB_RELEASES_URL = "https://github.com/QHGSDDDAA/LuxeLead/releases/latest"
 GITHUB_API_RELEASES_URL = (
-    "https://api.github.com/repos/quhe0517/LuxeLead/releases/latest"
+    "https://api.github.com/repos/QHGSDDDAA/LuxeLead/releases/latest"
 )
 
 # GitLab Generic Package URL for update manifest (private repo; requires deploy token).
