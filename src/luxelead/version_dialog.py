@@ -239,18 +239,24 @@ class CheckUpdateDialog:
         if not self.manifest:
             return
 
+
         if os.name != "nt":
-            # macOS: open browser to GitHub Releases
             import webbrowser
             url = self.manifest.get("download_url") or self.manifest.get("github_html_url", "")
             if url:
                 webbrowser.open(url)
-                msg = "请在浏览器中下载新版本。\n\n如果浏览器未自动打开，请访问：\n" + url
+                msg = "\n".join([
+                    "请在浏览器中下载新版本。",
+                    "",
+                    "如果浏览器未自动打开，请访问：",
+                    url
+                ])
                 messagebox.showinfo("打开下载页面", msg, parent=self.window)
             else:
                 messagebox.showwarning("无法更新", "未找到下载地址。", parent=self.window)
             return
 
+        self.update_package = resolve_update_package(self.manifest, VERSION)
         self.update_package = resolve_update_package(self.manifest, VERSION)
         download_url = self.update_package.get("download_url", "").strip()
         if not download_url:

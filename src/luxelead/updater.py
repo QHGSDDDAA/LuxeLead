@@ -81,21 +81,20 @@ def get_manifest_auth(config: Optional[dict] = None) -> dict:
     return {}
 
 
-def _parse_github_release(data: dict) -> dict:\
-    """Transform GitHub API release response into the internal manifest format."""\
-    tag = data.get("tag_name", "").lstrip("v")\
-    body = data.get("body") or ""\
-    html_url = data.get("html_url") or ""\
-    return {\
-        "version": tag,\
-        "display_version": f"V{tag}",\
-        "release_notes": body,\
-        "download_url": html_url,\
-        "release_date": (data.get("published_at") or "")[:10],\
-        "github_html_url": html_url,\
-        "is_github_release": True,\
-    }\
-\
+def _parse_github_release(data: dict) -> dict:
+    """Transform GitHub API release response into internal manifest format."""
+    tag = data.get("tag_name", "").lstrip("v")
+    body = data.get("body") or ""
+    html_url = data.get("html_url") or ""
+    return {
+        "version": tag,
+        "display_version": "V" + tag,
+        "release_notes": body,
+        "download_url": html_url,
+        "release_date": (data.get("published_at") or "")[:10],
+        "github_html_url": html_url,
+        "is_github_release": True,
+    }
 
 def fetch_manifest(
     url: Optional[str] = None,
@@ -110,14 +109,13 @@ def fetch_manifest(
         data = response.read()
     try:
         manifest = json.loads(data.decode("utf-8"))
+        if manifest.get("tag_name"):
+            manifest = _parse_github_release(manifest)
     except json.JSONDecodeError as exc:
         preview = data[:120].decode("utf-8", "replace")
         raise ValueError(
             f"更新清单不是有效 JSON（服务器可能要求登录）: {preview}"
         ) from exc
-    # GitHub API 格式特殊处理
-    if manifest.get("tag_name"):
-        manifest = _parse_github_release(manifest)
     for key in ("version", "display_version", "release_notes", "download_url"):
         if not manifest.get(key):
             raise ValueError(f"更新清单缺少必要字段: {key}")
