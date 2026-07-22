@@ -2,29 +2,18 @@
 """
 macOS PyInstaller spec for LuxeLead.
 Produces a signed .app bundle for distribution to Apple notebook users.
-
-Usage:
-    pyinstaller luxelead_macos.spec --noconfirm
-
-
-Environment variables:
-    LUXELEAD_ICON       Path to .icns file (default: luxelead.icns)
-    LUXELEAD_VERSION    Override version string (default: from src/luxelead/version.py)
-    LUXELEAD_BUILD      Build number (default: 1)
 """
 
 import os
 import sys
 import site
+from PyInstaller.utils.hooks import collect_all
 
 # ---------------------------------------------------------------------------
 # Version
 # ---------------------------------------------------------------------------
 def _read_version():
-    """Read VERSION from version.py without importing the package."""
-    version_py = os.path.join(
-        os.getcwd(), "src", "luxelead", "version.py"
-    )
+    version_py = os.path.join(os.getcwd(), "src", "luxelead", "version.py")
     with open(version_py, encoding="utf-8") as f:
         for line in f:
             if line.startswith("VERSION"):
@@ -39,27 +28,25 @@ BUILD_NUMBER = os.environ.get("LUXELEAD_BUILD", "1")
 # ---------------------------------------------------------------------------
 ICON_PATH = os.environ.get("LUXELEAD_ICON", "luxelead.icns")
 if not os.path.isfile(ICON_PATH):
-    ICON_PATH = None  # PyInstaller will use a default icon
+    ICON_PATH = None
 
 # ---------------------------------------------------------------------------
 # Bundle metadata
 # ---------------------------------------------------------------------------
 BUNDLE_IDENTIFIER = "com.luxelead.ppt-generator"
 BUNDLE_NAME = "LuxeLead"
-BUNDLE_DISPLAY_NAME = "伊芙丽奢领竞PPT排版工具"
+BUNDLE_DISPLAY_NAME = "\u4f0a\u5b5c\u4e3d\u5962\u9886\u7adePPT\u6392\u7248\u5de5\u5177"
 
 # ---------------------------------------------------------------------------
 # Data files
-
-
+# ---------------------------------------------------------------------------
 datas = [
     ("yolov8n.pt", "."),
     ("src/luxelead/templates/default.pptx", "templates"),
     ("releases/RELEASE_NOTES.md", "releases"),
 ]
 
-# 强制包含所有 luxelead .py 文件（有时 PyInstaller 会遗漏）
-import os
+# Force-include ALL luxelead source files (PyInstaller sometimes misses)
 for root, dirs, files in os.walk("src/luxelead"):
     dirs[:] = [d for d in dirs if d != "__pycache__"]
     for f in files:
@@ -68,82 +55,35 @@ for root, dirs, files in os.walk("src/luxelead"):
             dst = os.path.relpath(root, "src")
             datas.append((src, dst))
 
-
 # ---------------------------------------------------------------------------
-# Hidden imports  (same as Windows, minus platform-specific ones)
+# Hidden imports
 # ---------------------------------------------------------------------------
 hiddenimports = [
     "pptx",
-    "ultralytics",
-    "ultralytics.models",
-    "ultralytics.nn",
-    "ultralytics.engine",
-    "ultralytics.utils",
-    "torch",
-    "torchvision",
-    "cv2",
-    "numpy",
-    "lxml",
-    "PIL",
-    "matplotlib",
-    "matplotlib.pyplot",
+    "ultralytics", "ultralytics.models", "ultralytics.nn",
+    "ultralytics.engine", "ultralytics.utils",
+    "torch", "torchvision",
+    "cv2", "numpy", "lxml", "PIL",
+    "matplotlib", "matplotlib.pyplot",
     "matplotlib.backends.backend_agg",
-    "tkinter",
-    "tkinter.ttk",
-    "tkinter.filedialog",
-    "tkinter.messagebox",
+    "tkinter", "tkinter.ttk",
+    "tkinter.filedialog", "tkinter.messagebox",
     "pi_heif",
-    "luxelead.version_dialog",
-    "luxelead.version",
-    "luxelead.update_progress",
 ]
 
-# 强制包含所有 luxelead .py 文件（有时 PyInstaller 会遗漏）
-import os
-for root, dirs, files in os.walk("src/luxelead"):
-    dirs[:] = [d for d in dirs if d != "__pycache__"]
-    for f in files:
-        if f.endswith(".py"):
-            src = os.path.join(root, f)
-            dst = os.path.relpath(root, "src")
-            datas.append((src, dst))
-
-
-# ---------------------------------------------------------------------------
-# Collect pptx data/bins recursively
-# ---------------------------------------------------------------------------
-
-
-
+# Collect pptx/pi_heif submodules
 for pkg in ("pptx", "pi_heif"):
     ret = collect_all(pkg)
     datas += ret[0]
     hiddenimports += ret[2]
 
 # ---------------------------------------------------------------------------
-# Exclude heavy / unused packages (same as Windows but no sympy/mpmath issue
-# on macOS - ultralytics may still pull them in via YOLO export paths)
+# Excludes
 # ---------------------------------------------------------------------------
 excludes = [
-    "tensorboard",
-    "tensorflow",
-    "keras",
-    "notebook",
-    "IPython",
-    "pytest",
-    "pandas",
+    "tensorboard", "tensorflow", "keras",
+    "notebook", "IPython", "pytest", "pandas",
 ]
-
-# 强制包含所有 luxelead .py 文件（有时 PyInstaller 会遗漏）
-import os
-for root, dirs, files in os.walk("src/luxelead"):
-    dirs[:] = [d for d in dirs if d != "__pycache__"]
-    for f in files:
-        if f.endswith(".py"):
-            src = os.path.join(root, f)
-            dst = os.path.relpath(root, "src")
-            datas.append((src, dst))
-
 
 # ---------------------------------------------------------------------------
 # Analysis
@@ -165,7 +105,7 @@ a = Analysis(
 pyz = PYZ(a.pure)
 
 # ---------------------------------------------------------------------------
-# Executable  (windowed = no terminal; GUI app)
+# Executable (windowed = GUI)
 # ---------------------------------------------------------------------------
 exe = EXE(
     pyz,
@@ -180,16 +120,16 @@ exe = EXE(
     upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,          # GUI mode - no terminal window
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
-    target_arch=None,       # auto: arm64 on Apple Silicon, x86_64 on Intel
-    codesign_identity=None,  # set via --osx-bundle-identifier or env
+    target_arch=None,
+    codesign_identity=None,
     entitlements_file=None,
 )
 
 # ---------------------------------------------------------------------------
-# App bundle  (the .app folder macOS users double-click)
+# App bundle (.app)
 # ---------------------------------------------------------------------------
 app = BUNDLE(
     exe,
@@ -206,10 +146,9 @@ app = BUNDLE(
         "CFBundlePackageType": "APPL",
         "CFBundleInfoDictionaryVersion": "6.0",
         "NSHighResolutionCapable": True,
-        "NSHumanReadableCopyright": f"Copyright (c) {_read_version()} LuxeLead Team. All rights reserved.",
-        "LSMinimumSystemVersion": "11.0",   # macOS 11 Big Sur minimum
+        "NSHumanReadableCopyright": f"Copyright (c) {APP_VERSION} LuxeLead Team",
+        "LSMinimumSystemVersion": "11.0",
         "NSRequiresAquaSystemAppearance": False,
     },
     version=APP_VERSION,
 )
-
