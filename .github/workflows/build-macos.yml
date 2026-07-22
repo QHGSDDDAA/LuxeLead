@@ -231,14 +231,6 @@ jobs:
 
       # --------------------------------------------------------------------
       # 11. 上传产物到 GitHub Actions Artifacts
-      # --------------------------------------------------------------------
-      - name: Upload .app as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: LuxeLead-app
-          path: dist/LuxeLead.app
-          compression-level: 0
-          retention-days: 7
 
       - name: Upload DMG as artifact
         uses: actions/upload-artifact@v4
@@ -246,7 +238,7 @@ jobs:
           name: LuxeLead-DMG
           path: ${{ steps.dmg.outputs.DMG_PATH }}
           if-no-files-found: warn
-          retention-days: 30
+          retention-days: 1
 
       # --------------------------------------------------------------------
       # 12. 创建 GitHub Release（仅标签推送时触发）
