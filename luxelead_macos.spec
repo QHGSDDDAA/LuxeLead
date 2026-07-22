@@ -6,6 +6,7 @@ Produces a signed .app bundle for distribution to Apple notebook users.
 Usage:
     pyinstaller luxelead_macos.spec --noconfirm
 
+
 Environment variables:
     LUXELEAD_ICON       Path to .icns file (default: luxelead.icns)
     LUXELEAD_VERSION    Override version string (default: from src/luxelead/version.py)
@@ -49,11 +50,14 @@ BUNDLE_DISPLAY_NAME = "伊芙丽奢领竞PPT排版工具"
 
 # ---------------------------------------------------------------------------
 # Data files
+from PyInstaller.building.api import Tree
+
 # ---------------------------------------------------------------------------
 datas = [
     ("yolov8n.pt", "."),
     ("src/luxelead/templates/default.pptx", "templates"),
     ("releases/RELEASE_NOTES.md", "releases"),
+    Tree("src/luxelead", prefix="luxelead", excludes=["__pycache__"]),
 ]
 
 # ---------------------------------------------------------------------------
@@ -88,7 +92,8 @@ hiddenimports = [
 # ---------------------------------------------------------------------------
 # Collect pptx data/bins recursively
 # ---------------------------------------------------------------------------
-from PyInstaller.utils.hooks import collect_all
+
+
 
 for pkg in ("pptx", "pi_heif"):
     ret = collect_all(pkg)
