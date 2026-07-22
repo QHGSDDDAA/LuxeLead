@@ -247,10 +247,7 @@ class CheckUpdateDialog:
                 webbrowser.open(url)
                 messagebox.showinfo(
                     "打开下载页面",
-                    f"请在浏览器中下载新版本。
-
-如果浏览器未自动打开，请访问：
-{url}",
+                    f"请在浏览器中下载新版本。\n\n如果浏览器未自动打开，请访问：\n{url}",
                     parent=self.window,
                 )
             else:
