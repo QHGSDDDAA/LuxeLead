@@ -1,8 +1,8 @@
 """Application version and online-update configuration."""
 
-VERSION = "0.8.0"
-DISPLAY_VERSION = "测试版V0.8.0"
-RELEASE_DATE = "2026-06-30"
+VERSION = "0.8.1"
+DISPLAY_VERSION = "测试版V0.8.1"
+RELEASE_DATE = "2026-07-22"
 
 # GitLab Generic Package URL for update manifest (private repo; requires deploy token).
 # GitHub Releases URL for update checking (public).
