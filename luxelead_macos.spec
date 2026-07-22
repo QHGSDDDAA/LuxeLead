@@ -50,7 +50,7 @@ BUNDLE_DISPLAY_NAME = "伊芙丽奢领竞PPT排版工具"
 
 # ---------------------------------------------------------------------------
 # Data files
-from PyInstaller.building.api import Tree
+from PyInstaller.building.dataclass import Tree
 
 # ---------------------------------------------------------------------------
 datas = [
