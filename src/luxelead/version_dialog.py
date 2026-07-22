@@ -245,11 +245,8 @@ class CheckUpdateDialog:
             url = self.manifest.get("download_url") or self.manifest.get("github_html_url", "")
             if url:
                 webbrowser.open(url)
-                messagebox.showinfo(
-                    "打开下载页面",
-                    f"请在浏览器中下载新版本。\n\n如果浏览器未自动打开，请访问：\n{url}",
-                    parent=self.window,
-                )
+                msg = "请在浏览器中下载新版本。\n\n如果浏览器未自动打开，请访问：\n" + url
+                messagebox.showinfo("打开下载页面", msg, parent=self.window)
             else:
                 messagebox.showwarning("无法更新", "未找到下载地址。", parent=self.window)
             return
